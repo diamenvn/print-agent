@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print Agent — Client demo</title>
+  <style>
+    body { font-family: system-ui, "Segoe UI", Roboto, sans-serif; margin: 0;
+           background: #f2f4f7; color: #1f2937; }
+    header { background: #111827; color: #fff; padding: 14px 24px; font-weight: 600; }
+    .wrap { max-width: 860px; margin: 24px auto; padding: 0 16px;
+            display: grid; gap: 20px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+            padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+    h2 { margin: 0 0 14px; font-size: 17px; }
+    label { font-weight: 600; display: inline-block; margin-right: 8px; }
+    select, input, button, textarea {
+      font-size: 15px; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid #d1d5db; }
+    textarea { width: 100%; box-sizing: border-box; font-family: monospace; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .seg { display: inline-flex; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; }
+    .seg input { display: none; }
+    .seg label { padding: 8px 22px; cursor: pointer; margin: 0; background: #fff; }
+    .seg input:checked + label { background: #2563eb; color: #fff; }
+    button.primary { background: #2563eb; color: #fff; border-color: #2563eb;
+                     font-weight: 600; cursor: pointer; }
+    button.primary:hover { background: #1d4ed8; }
+    .status { margin-top: 12px; font-size: 14px; min-height: 20px; }
+    .ok { color: #059669; } .err { color: #dc2626; }
+    small { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <header>🖨️ Print Agent — Client demo</header>
+  <div class="wrap">
+
+    <!-- Cấu hình chung -->
+    <div class="card">
+      <h2>Cấu hình in</h2>
+      <div class="row">
+        <label>Khổ giấy:</label>
+        <div class="seg">
+          <input type="radio" name="size" id="a4" value="A4" checked>
+          <label for="a4">A4</label>
+          <input type="radio" name="size" id="a5" value="A5">
+          <label for="a5">A5</label>
+        </div>
+        <label style="margin-left:16px">Hướng:</label>
+        <select id="orientation">
+          <option value="portrait">Dọc</option>
+          <option value="landscape">Ngang</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Máy in:</label>
+        <select id="printer" style="min-width:280px"></select>
+        <button onclick="loadPrinters()">↻ Tải lại</button>
+      </div>
+      <div class="row">
+        <label>Số bản:</label>
+        <input type="number" id="copies" value="1" min="1" style="width:80px">
+      </div>
+      <small>Bỏ trống máy in = dùng máy in mặc định của Windows.</small>
+    </div>
+
+    <!-- In HTML mẫu -->
+    <div class="card">
+      <h2>1) In nội dung HTML</h2>
+      <textarea id="html" rows="6">&lt;h1&gt;PHIẾU IN MẪU&lt;/h1&gt;
+&lt;p&gt;In trực tiếp qua Print Agent — không hộp thoại.&lt;/p&gt;
+&lt;table border="1" cellpadding="6" style="border-collapse:collapse"&gt;
+&lt;tr&gt;&lt;th&gt;SP&lt;/th&gt;&lt;th&gt;SL&lt;/th&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;Sản phẩm A&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;</textarea>
+      <div class="row" style="margin-top:12px">
+        <button class="primary" onclick="printHtml()">🖨️ In HTML</button>
+      </div>
+    </div>
+
+    <!-- In file: PDF / ảnh / XML -->
+    <div class="card">
+      <h2>2) In file (PDF, ảnh, XML...)</h2>
+      <div class="row">
+        <input type="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.xml,.html,.txt">
+        <button class="primary" onclick="printFile()">🖨️ In file</button>
+      </div>
+      <small>PDF, PNG, JPG, GIF, XML, HTML, TXT đều in được.</small>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+<script>
+const API = location.origin;              // agent phục vụ luôn trang này
+const $ = (id) => document.getElementById(id);
+
+function baseReq() {
+  return {
+    paperSize: document.querySelector('input[name=size]:checked').value,
+    orientation: $('orientation').value,
+    printer: $('printer').value || null,
+    copies: parseInt($('copies').value) || 1
+  };
+}
+
+function setStatus(msg, ok) {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'status ' + (ok ? 'ok' : 'err');
+}
+
+async function send(body) {
+  setStatus('Đang gửi lệnh in...', true);
+  try {
+    const res = await fetch(API + '/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.success) setStatus('✅ Đã in tới "' + data.printer + '" (' + data.paperSize + ').', true);
+    else setStatus('❌ ' + (data.error || 'Lỗi in.'), false);
+  } catch (e) {
+    setStatus('❌ Không kết nối được agent: ' + e.message, false);
+  }
+}
+
+function printHtml() {
+  send({ ...baseReq(), type: 'html', content: $('html').value });
+}
+
+function printFile() {
+  const f = $('file').files[0];
+  if (!f) { setStatus('Chưa chọn file.', false); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const b64 = reader.result.split(',')[1];   // bỏ tiền tố data URI
+    send({ ...baseReq(), type: 'auto', fileName: f.name, contentBase64: b64 });
+  };
+  reader.readAsDataURL(f);
+}
+
+async function loadPrinters() {
+  try {
+    const res = await fetch(API + '/printers');
+    const data = await res.json();
+    const sel = $('printer');
+    sel.innerHTML = '<option value="">(Mặc định) ' + data.defaultPrinter + '</option>';
+    data.printers.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p; sel.appendChild(o);
+    });
+  } catch (e) {
+    setStatus('Không tải được danh sách máy in.', false);
+  }
+}
+loadPrinters();
+</script>
+</body>
+</html>
