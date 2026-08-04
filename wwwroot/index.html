@@ -56,6 +56,9 @@
         <label>Máy in:</label>
         <select id="printer" style="min-width:280px"></select>
         <button onclick="loadPrinters()">↻ Tải lại</button>
+        <label style="font-weight:400;margin-left:8px">
+          <input type="checkbox" id="showAll" onchange="loadPrinters()"> Hiện cả máy in ảo
+        </label>
       </div>
       <div class="row">
         <label>Số bản:</label>
@@ -143,14 +146,22 @@ function printFile() {
 
 async function loadPrinters() {
   try {
-    const res = await fetch(API + '/printers');
+    const showAll = $('showAll') && $('showAll').checked;
+    const res = await fetch(API + '/printers' + (showAll ? '?all=true' : ''));
     const data = await res.json();
     const sel = $('printer');
     sel.innerHTML = '<option value="">(Mặc định) ' + data.defaultPrinter + '</option>';
     data.printers.forEach(p => {
       const o = document.createElement('option');
-      o.value = p; o.textContent = p; sel.appendChild(o);
+      o.value = p.name;
+      let label = p.name;
+      if (p.offline) label += ' — (offline)';
+      if (!p.physical) label += ' — (ảo)';
+      o.textContent = label;
+      sel.appendChild(o);
     });
+    if (data.printers.length === 0)
+      setStatus('Không thấy máy in vật lý nào. Tick "Hiện cả máy in ảo" để xem tất cả.', false);
   } catch (e) {
     setStatus('Không tải được danh sách máy in.', false);
   }

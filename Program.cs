@@ -64,12 +64,26 @@ app.MapGet("/health", () => Results.Ok(new
     time = DateTime.Now
 }));
 
-app.MapGet("/printers", () =>
+app.MapGet("/printers", (bool? all) =>
 {
-    var printers = new List<string>();
-    foreach (string p in PrinterSettings.InstalledPrinters) printers.Add(p);
-    var def = new PrinterSettings().PrinterName;
-    return Results.Ok(new { defaultPrinter = def, printers });
+    var infos = PrinterService.GetPrinters();
+    var def = infos.FirstOrDefault(p => p.IsDefault)?.Name ?? "";
+
+    // Mặc định chỉ trả về máy in VẬT LÝ. Thêm ?all=true để lấy cả máy in ảo.
+    var visible = (all == true) ? infos : infos.Where(p => p.Physical).ToList();
+
+    return Results.Ok(new
+    {
+        defaultPrinter = def,
+        printers = visible.Select(p => new
+        {
+            name = p.Name,
+            port = p.Port,
+            physical = p.Physical,
+            offline = p.Offline,
+            isDefault = p.IsDefault
+        })
+    });
 });
 
 app.MapPost("/print", async (PrintRequest req) =>

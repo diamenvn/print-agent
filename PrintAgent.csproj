@@ -16,6 +16,7 @@
     <!-- Engine render + in im lặng (Edge/Chromium). Cập nhật version mới nhất nếu muốn. -->
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
