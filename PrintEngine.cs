@@ -105,6 +105,10 @@ public sealed class PrintEngine : IDisposable
                 ps.ShouldPrintHeaderAndFooter = false;
                 if (!string.IsNullOrWhiteSpace(opt.Printer))
                     ps.PrinterName = opt.Printer;            // rỗng = máy in mặc định
+
+                // Ép dùng khổ giấy TÙY CHỈNH đúng như ta gửi (tránh máy in
+                // tự lấy khổ mặc định rồi xoay ngang nội dung).
+                ps.MediaSize = CoreWebView2PrintMediaSize.Custom;
                 ps.PageWidth = opt.WidthInch;                // khổ giấy (inch)
                 ps.PageHeight = opt.HeightInch;
                 ps.MarginTop = ps.MarginBottom = opt.MarginInch;
@@ -112,6 +116,7 @@ public sealed class PrintEngine : IDisposable
                 ps.Orientation = opt.Landscape
                     ? CoreWebView2PrintOrientation.Landscape
                     : CoreWebView2PrintOrientation.Portrait;
+                ps.ScaleFactor = opt.Scale;                  // fit to page (tỉ lệ)
                 ps.Copies = opt.Copies;
 
                 // --- In im lặng ---

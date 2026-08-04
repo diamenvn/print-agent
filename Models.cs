@@ -49,6 +49,9 @@ public class PrintRequest
 
     /// <summary>In màu nền/hình nền. Mặc định true.</summary>
     public bool? PrintBackground { get; set; }
+
+    /// <summary>Tỉ lệ in theo phần trăm (fit to page). 100 = giữ nguyên. Mặc định 100.</summary>
+    public double? Scale { get; set; }
 }
 
 /// <summary>Tham số in đã chuẩn hóa (đơn vị inch) truyền xuống engine.</summary>
@@ -61,4 +64,5 @@ public record PrintOptions
     public string? Printer { get; init; }
     public int Copies { get; init; } = 1;
     public bool PrintBackground { get; init; } = true;
+    public double Scale { get; init; } = 1.0;   // hệ số cho ScaleFactor (0.1–2.0)
 }

@@ -27,8 +27,12 @@ public static class PrintSettingsFactory
             Copies = r.Copies is > 0 ? r.Copies.Value : 1,
             MarginInch = r.MarginMm.HasValue ? Mm(r.MarginMm.Value) : Mm(10),
             PrintBackground = r.PrintBackground ?? true,
+            Scale = Clamp((r.Scale is > 0 ? r.Scale.Value : 100) / 100.0, 0.1, 2.0),
         };
     }
 
     private static double Mm(double mm) => mm / 25.4;
+
+    private static double Clamp(double v, double min, double max)
+        => v < min ? min : (v > max ? max : v);
 }

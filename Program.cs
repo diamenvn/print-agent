@@ -16,6 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+// Cho phép body lớn (file PDF/ảnh base64 có thể nặng). Mặc định Kestrel ~28MB.
+builder.WebHost.ConfigureKestrel(o =>
+{
+    o.Limits.MaxRequestBodySize = 512L * 1024 * 1024; // 512 MB
+});
+
 // Cho phép mọi origin gọi tới (agent chỉ nghe ở localhost).
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod()));
